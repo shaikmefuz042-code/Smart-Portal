@@ -1,0 +1,24 @@
+# Ignore generated Python files and local environment folders
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+venv/
+.env.*
+.venv/
+
+# Ignore local Python installation and unrelated system folders
+Python-3.10.13/
+"Program Files"/
+
+# Ignore large model files (>100MB - GitHub limit)
+*.h5
+*.whl
+*.pkl
+*.joblib
+model/mongosh-2.6.0-win32-x64/
+
+# Ignore OS files
+.DS_Store
+Thumbs.db

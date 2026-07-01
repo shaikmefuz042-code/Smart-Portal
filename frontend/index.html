@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Portal Login</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f7fa; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-container { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 300px; }
+        h1 { text-align: center; color: #2c3e50; }
+        label { display: block; margin-bottom: 5px; color: #333; }
+        select, input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { width: 100%; padding: 10px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #2980b9; }
+        #branch-select { display: none; }  /* Hidden by default, shown for students */
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>Smart Portal Login</h1>
+        <form id="login-form">
+            <label for="role">Role:</label>
+            <select id="role" required>
+                <option value="">Select Role</option>
+                <option value="faculty">Faculty</option>
+                <option value="student">Student</option>
+            </select>
+            
+            <label for="id">ID/Roll Number:</label>
+            <input type="text" id="id" required>
+            
+            <label for="password">Password:</label>
+            <input type="password" id="password" required>
+            
+            <label for="branch" id="branch-label" style="display: none;">Branch:</label>
+            <select id="branch-select" style="display: none;" required>
+                <option value="">Select Branch</option>
+                <option value="CSBS">CSBS</option>
+                <option value="AIML">AIML</option>
+                <option value="CS">CS</option>
+                <option value="DS">DS</option>
+                <option value="IOT">IOT</option>
+            </select>
+            
+            <button type="submit">Login</button>
+        </form>
+    </div>
+    <script>
+        const roleSelect = document.getElementById('role');
+        const branchLabel = document.getElementById('branch-label');
+        const branchSelect = document.getElementById('branch-select');
+        
+        roleSelect.addEventListener('change', () => {
+            if (roleSelect.value === 'student') {
+                branchLabel.style.display = 'block';
+                branchSelect.style.display = 'block';
+            } else {
+                branchLabel.style.display = 'none';
+                branchSelect.style.display = 'none';
+            }
+        });
+        
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const role = roleSelect.value;
+            const uid = document.getElementById('id').value;
+            const password = document.getElementById('password').value;
+            const branch = branchSelect.value;
+            
+            const response = await fetch('/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ role, id: uid, password, branch })
+            });
+            
+            const result = await response.json();
+            if (result.status === 'success') {
+                if (role === 'faculty') {
+                    window.location.href = `/faculty?id=${uid}`;
+                } else if (role === 'student') {
+                    window.location.href = `/student?roll=${uid}&branch=${branch}`;
+                }
+            } else {
+                alert('Invalid credentials');
+            }
+        });
+    </script>
+</body>
+</html>

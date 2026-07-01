@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f7fa; color: #333; }
+        h1, h2 { color: #2c3e50; }
+        .section { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
+        th { background: #3498db; color: white; }
+        button { background: #3498db; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #2980b9; }
+        #logout { position: absolute; top: 20px; right: 20px; }
+        #attendance-results { display: none; }
+        #student-image { width: 100px; height: 100px; float: right; margin-left: 20px; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <button id="logout">Logout</button>
+    <h1>Student Dashboard</h1>
+    <div class="section" id="student-info">
+        <img id="student-image" src="" alt="Student Image">
+        <h2>Your Credentials</h2>
+        <p><strong>Name:</strong> <span id="name"></span></p>
+        <p><strong>Roll Number:</strong> <span id="roll"></span></p>
+        <p><strong>Branch:</strong> <span id="branch"></span></p>
+        <p><strong>Department:</strong> <span id="department"></span></p>
+        <p><strong>Year:</strong> <span id="year"></span></p>
+        <p><strong>CGPA:</strong> <span id="cgpa"></span></p>
+        <p><strong>Email:</strong> <span id="email"></span></p>
+        <p><strong>Phone:</strong> <span id="phone"></span></p>
+        <p><strong>Fee Balance:</strong> ₹<span id="fee-balance"></span></p>
+    </div>
+    <div class="section">
+        <h2>Your Attendance</h2>
+        <button id="check-attendance-btn">Check Attendance</button>
+        <div id="attendance-results">
+            <h3>Attendance for <span id="student-name"></span> (<span id="student-roll"></span>)</h3>
+            <table id="attendance-table">
+                <thead><tr><th>Subject</th><th>Percentage</th></tr></thead>
+                <tbody id="attendance-body"></tbody>
+            </table>
+            <p><strong>Overall Attendance:</strong> <span id="overall-percentage"></span></p>
+        </div>
+    </div>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const roll = urlParams.get('roll');
+        const branch = urlParams.get('branch');  // New: Get branch from URL
+        document.getElementById('logout').addEventListener('click', () => window.location.href = '/');
+        
+        if (roll && branch) {
+            // Fetch student data
+            fetch(`/student/data/${roll}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Student data:', data);  // Debug log
+                    document.getElementById('name').textContent = data.name || 'N/A';
+                    document.getElementById('roll').textContent = data.roll_no || 'N/A';
+                    document.getElementById('branch').textContent = data.branch || 'N/A';  // Changed to lowercase "branch"
+                    document.getElementById('department').textContent = data.Department || 'N/A';  // Correct field
+                    document.getElementById('year').textContent = data.year || 'N/A';
+                    document.getElementById('cgpa').textContent = data.cgpa || 'N/A';
+                    document.getElementById('email').textContent = data.email || 'N/A';
+                    document.getElementById('phone').textContent = data.phone || 'N/A';
+                    document.getElementById('fee-balance').textContent = data.fee_balance || '0';
+                    
+                    // Set student name and roll for attendance display
+                    document.getElementById('student-name').textContent = data.name || 'N/A';
+                    document.getElementById('student-roll').textContent = data.roll_no || 'N/A';
+                    
+                    // Set student image using branch from URL
+                    document.getElementById('student-image').src = `/student/image/${roll}/${branch}`;
+                })
+                .catch(err => {
+                    console.error('Error fetching student data:', err);
+                    alert('Error loading student data. Check console for details.');
+                });
+            
+            // Check Attendance Button
+            document.getElementById('check-attendance-btn').addEventListener('click', () => {
+                console.log('Fetching attendance for roll:', roll);
+                fetch(`/attendance/student/${roll}`)
+                    .then(r => {
+                        console.log('Response status:', r.status);
+                        if (!r.ok) {
+                            throw new Error(`HTTP error! status: ${r.status}`);
+                        }
+                        return r.json();
+                    })
+                    .then(data => {
+                        console.log('Attendance data received:', data);
+                        const body = document.getElementById('attendance-body');
+                        const resultsDiv = document.getElementById('attendance-results');
+                        const overallPercentage = document.getElementById('overall-percentage');
+                        
+                        body.innerHTML = '';
+                        
+                        if (data.length === 0) {
+                            alert('No attendance records found. Ensure subjects are added to MongoDB for your year and branch.');
+                            return;
+                        }
+                        
+                        let totalPresent = 0;
+                        let totalClasses = 0;
+                        data.forEach(subj => {
+                            const row = body.insertRow();
+                            row.insertCell(0).textContent = subj.subject;
+                            row.insertCell(1).textContent = subj.percentage;
+                            const present = subj.records.filter(r => r.status === 'Present').length;
+                            totalPresent += present;
+                            totalClasses += subj.records.length;
+                        });
+                        const overall = totalClasses > 0 ? ((totalPresent / totalClasses) * 100).toFixed(2) : 0;
+                        overallPercentage.textContent = `${overall}% (${totalPresent}/${totalClasses} classes)`;
+                        
+                        resultsDiv.style.display = 'block';
+                    })
+                    .catch(err => {
+                        console.error('Error fetching student attendance:', err);
+                        alert('Error loading attendance. Check console for details.');
+                    });
+            });
+        } else {
+            alert('Roll number or branch not found. Please log in again.');
+        }
+    </script>
+</body>
+</html>
